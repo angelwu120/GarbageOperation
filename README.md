@@ -30,3 +30,25 @@ $distanceMatrix
 [11,] 2439 1613  347 1516  732  995 1146 1200  917   461     0   130   653
 [12,] 2425 1564  323 1467  718  982 1097 1151  904   319   106     0   639
 [13,] 2153 1774  641 1677  919 1134 1307 1336 1057   254   343   387     0
+
+function model(){
+  routeSequences[k in 0..nbTrucks-1] <- list(nbCustomers);      // decision variable
+  constraint partition[k in 0..nbTrucks-1](routeSequences[k]);  // visited by exaclty one route
+  trucksUsed[k in 0..nbTrucks-1] <- count(routeSequences[k]) > 0;  
+  nbTrucksUsed <- sum[k in 0..nbTrucks-1](trucksUsed[k]);
+  for [k in 0..nbTrucks-1] {
+  local sequence <- routeSequences[k];
+  local c <- count(sequence);
+  // The quantity needed in each route must not exceed the truck capacity
+  routeQuantity[k] <- sum(0..c-1, i => demands[sequence[i]]);
+  constraint routeQuantity[k] <= truckCapacity;
+  // Distance travelled by truck k
+  routeDistances[k] <- sum(1..c-1, i => distanceMatrix[sequence[i-1]+2][sequence[i]+2]) +
+  (c > 0 ? (distanceMatrix[0][sequence[0]+2] + distanceMatrix[sequence[c-1]+2][1]) : 0);
+  }
+  // Total distance travelled
+  totalDistance <- sum[k in 0..nbTrucks-1](routeDistances[k]);
+  // Objective: minimize the number of trucks used, then minimize the distance travelled
+  minimize nbTrucksUsed;   
+  minimize totalDistance;
+}
